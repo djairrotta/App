@@ -252,8 +252,24 @@ const AdminDashboard = () => {
                         <TableCell className="text-sm">{client.phone}</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-pink-500" />
-                            <span className="font-medium text-pink-600">{client.birthDate}</span>
+                            {isBirthdayToday(client.birthDate) ? (
+                              <>
+                                <Cake className="h-5 w-5 text-pink-500 animate-pulse" />
+                                <span className="font-bold text-pink-600">{client.birthDate}</span>
+                                <Badge className="bg-pink-100 text-pink-700 text-xs">HOJE!</Badge>
+                              </>
+                            ) : isBirthdayThisMonth(client.birthDate) ? (
+                              <>
+                                <Calendar className="h-4 w-4 text-pink-400" />
+                                <span className="font-medium text-pink-500">{client.birthDate}</span>
+                                <Badge variant="outline" className="text-xs border-pink-300 text-pink-600">Este mês</Badge>
+                              </>
+                            ) : (
+                              <>
+                                <Calendar className="h-4 w-4 text-slate-400" />
+                                <span className="text-slate-600">{client.birthDate}</span>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-center font-semibold">{client.processCount}</TableCell>
