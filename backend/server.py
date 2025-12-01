@@ -486,6 +486,27 @@ async def criar_agendamento(agendamento: Dict = Body(...)):
             {"$set": {"disponivel": False}}
         )
         
+        # Enviar confirmação via WhatsApp
+        telefone = agendamento.get('user_phone', '')
+        if telefone:
+            # Formatar data para exibição
+            data_formatada = agendamento["data"]
+            try:
+                from datetime import datetime
+                data_obj = datetime.strptime(agendamento["data"], "%Y-%m-%d")
+                data_formatada = data_obj.strftime("%d/%m/%Y")
+            except:
+                pass
+            
+            whatsapp_service.enviar_confirmacao_agendamento(
+                nome=agendamento.get('user_name', ''),
+                phone=telefone,
+                data=data_formatada,
+                hora=agendamento["hora_inicio"],
+                tipo=agendamento["tipo"],
+                processo=agendamento.get('processo_numero', '')
+            )
+        
         return {
             "success": True,
             "message": "Agendamento realizado com sucesso",
