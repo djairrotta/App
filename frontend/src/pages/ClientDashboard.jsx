@@ -652,6 +652,108 @@ const ClientDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog para Upload de Documentos */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-blue-900">Enviar Documentos</DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Solicitação: <span className="font-semibold text-blue-700">{selectedSolicitacao?.titulo}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 mt-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-semibold text-blue-900 mb-2">Documentos Solicitados:</p>
+              <p className="text-sm text-blue-700 whitespace-pre-line">{selectedSolicitacao?.descricao}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="file" className="text-sm font-semibold text-slate-700">
+                Selecione o arquivo *
+              </Label>
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                <Input
+                  id="file"
+                  type="file"
+                  onChange={(e) => setUploadFile(e.target.files[0])}
+                  className="cursor-pointer"
+                  accept="*/*"
+                />
+                {uploadFile && (
+                  <div className="mt-3 flex items-center space-x-2 text-sm text-blue-700">
+                    <FileText className="h-4 w-4" />
+                    <span className="font-medium">{uploadFile.name}</span>
+                    <span className="text-slate-500">
+                      ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Aceita qualquer tipo de arquivo: PDF, DOC, JPG, PNG, etc.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="observacoes" className="text-sm font-semibold text-slate-700">
+                Observações (Opcional)
+              </Label>
+              <Textarea
+                id="observacoes"
+                placeholder="Adicione informações adicionais sobre os documentos enviados..."
+                value={uploadObservacoes}
+                onChange={(e) => setUploadObservacoes(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-start space-x-2">
+                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-green-900">Upload Seguro</p>
+                  <p className="text-xs text-green-700 mt-1">
+                    Seus documentos são armazenados com segurança e apenas o escritório terá acesso.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUploadDialog(false);
+                  setUploadFile(null);
+                  setUploadObservacoes('');
+                }}
+                className="flex-1"
+                disabled={uploading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleUploadDocumento}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                disabled={uploading || !uploadFile}
+              >
+                {uploading ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Enviar Documento
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
