@@ -401,6 +401,15 @@ const AdminDashboard = () => {
                                     </Button>
                                   </div>
                                   <Button 
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full mt-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                                    onClick={() => setShowSolicitarDocDialog(true)}
+                                  >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Solicitar Documentos
+                                  </Button>
+                                  <Button 
                                     variant="outline" 
                                     size="sm"
                                     className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
