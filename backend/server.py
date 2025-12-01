@@ -608,6 +608,262 @@ async def criar_agendamento_manual(dados: Dict = Body(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ========================================
+# SISTEMA DE SOLICITAÇÃO DE DOCUMENTOS
+# ========================================
+
+# Criar pasta para armazenar documentos
+UPLOAD_DIR = Path("/app/backend/uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+class SolicitacaoDocumento(BaseModel):
+    """Solicitação de documento"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    solicitado_por: str = "admin"
+    titulo: str
+    descricao: str
+    prazo: Optional[str] = None
+    status: str = "pendente"  # pendente, enviado, aprovado, rejeitado
+    criado_em: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    atualizado_em: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Documento(BaseModel):
+    """Documento enviado"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    solicitacao_id: str
+    user_id: str
+    user_name: str
+    filename: str
+    filepath: str
+    file_size: int
+    file_type: str
+    observacoes: Optional[str] = None
+    enviado_em: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+@api_router.post("/admin/solicitacoes-documento")
+async def criar_solicitacao_documento(dados: Dict = Body(...)):
+    """
+    Admin solicita documentos a um cliente
+    """
+    try:
+        solicitacao = SolicitacaoDocumento(**dados)
+        await db.solicitacoes_documento.insert_one(solicitacao.dict())
+        
+        return {
+            "success": True,
+            "message": "Solicitação enviada com sucesso",
+            "solicitacao": solicitacao.dict()
+        }
+    except Exception as e:
+        logger.error(f"Erro ao criar solicitação: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/solicitacoes-documento/usuario/{user_id}")
+async def listar_solicitacoes_usuario(user_id: str):
+    """
+    Lista solicitações de documentos de um usuário
+    """
+    try:
+        solicitacoes = await db.solicitacoes_documento.find(
+            {"user_id": user_id},
+            {"_id": 0}
+        ).sort("criado_em", -1).to_list(1000)
+        
+        return {
+            "success": True,
+            "total": len(solicitacoes),
+            "solicitacoes": solicitacoes
+        }
+    except Exception as e:
+        logger.error(f"Erro ao listar solicitações: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/solicitacoes-documento")
+async def listar_todas_solicitacoes():
+    """
+    Lista todas as solicitações (Admin)
+    """
+    try:
+        solicitacoes = await db.solicitacoes_documento.find(
+            {},
+            {"_id": 0}
+        ).sort("criado_em", -1).to_list(1000)
+        
+        return {
+            "success": True,
+            "total": len(solicitacoes),
+            "solicitacoes": solicitacoes
+        }
+    except Exception as e:
+        logger.error(f"Erro ao listar solicitações: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/documentos/upload")
+async def upload_documento(
+    solicitacao_id: str = Form(...),
+    user_id: str = Form(...),
+    user_name: str = Form(...),
+    observacoes: Optional[str] = Form(None),
+    file: UploadFile = File(...)
+):
+    """
+    Cliente envia documento
+    """
+    try:
+        # Criar pasta do usuário
+        user_folder = UPLOAD_DIR / user_id
+        user_folder.mkdir(exist_ok=True)
+        
+        # Gerar nome único para o arquivo
+        file_extension = Path(file.filename).suffix
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = user_folder / unique_filename
+        
+        # Salvar arquivo
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Obter tamanho do arquivo
+        file_size = file_path.stat().st_size
+        
+        # Criar registro do documento
+        documento = Documento(
+            solicitacao_id=solicitacao_id,
+            user_id=user_id,
+            user_name=user_name,
+            filename=file.filename,
+            filepath=str(file_path),
+            file_size=file_size,
+            file_type=file.content_type or "unknown",
+            observacoes=observacoes
+        )
+        
+        await db.documentos.insert_one(documento.dict())
+        
+        # Atualizar status da solicitação
+        await db.solicitacoes_documento.update_one(
+            {"id": solicitacao_id},
+            {
+                "$set": {
+                    "status": "enviado",
+                    "atualizado_em": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+        return {
+            "success": True,
+            "message": "Documento enviado com sucesso",
+            "documento": documento.dict()
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao fazer upload: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/documentos/solicitacao/{solicitacao_id}")
+async def listar_documentos_solicitacao(solicitacao_id: str):
+    """
+    Lista documentos de uma solicitação
+    """
+    try:
+        documentos = await db.documentos.find(
+            {"solicitacao_id": solicitacao_id},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        return {
+            "success": True,
+            "total": len(documentos),
+            "documentos": documentos
+        }
+    except Exception as e:
+        logger.error(f"Erro ao listar documentos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/documentos/usuario/{user_id}")
+async def listar_documentos_usuario(user_id: str):
+    """
+    Lista todos os documentos de um usuário
+    """
+    try:
+        documentos = await db.documentos.find(
+            {"user_id": user_id},
+            {"_id": 0}
+        ).sort("enviado_em", -1).to_list(1000)
+        
+        return {
+            "success": True,
+            "total": len(documentos),
+            "documentos": documentos
+        }
+    except Exception as e:
+        logger.error(f"Erro ao listar documentos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/documentos/download/{documento_id}")
+async def download_documento(documento_id: str):
+    """
+    Faz download de um documento
+    """
+    try:
+        documento = await db.documentos.find_one({"id": documento_id})
+        
+        if not documento:
+            raise HTTPException(status_code=404, detail="Documento não encontrado")
+        
+        file_path = Path(documento["filepath"])
+        
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+        
+        return FileResponse(
+            path=str(file_path),
+            filename=documento["filename"],
+            media_type=documento["file_type"]
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao fazer download: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/admin/solicitacoes-documento/{solicitacao_id}/status")
+async def atualizar_status_solicitacao(solicitacao_id: str, dados: Dict = Body(...)):
+    """
+    Atualiza status de uma solicitação (Admin)
+    """
+    try:
+        dados["atualizado_em"] = datetime.now(timezone.utc).isoformat()
+        
+        result = await db.solicitacoes_documento.update_one(
+            {"id": solicitacao_id},
+            {"$set": dados}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+        
+        return {"success": True, "message": "Status atualizado com sucesso"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao atualizar status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
