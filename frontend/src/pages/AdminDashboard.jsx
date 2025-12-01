@@ -302,6 +302,193 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="horarios" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Gerenciar Horários Disponíveis</CardTitle>
+                    <CardDescription>Configure os horários que os clientes poderão agendar (intervalos de 1 hora)</CardDescription>
+                  </div>
+                  <Dialog open={showCreateHorariosDialog} onOpenChange={setShowCreateHorariosDialog}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-cyan-500 hover:bg-cyan-600">
+                        <Plus className="h-4 w-4 mr-2" />Criar Horários em Lote
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                      <DialogHeader>
+                        <DialogTitle>Criar Horários em Lote</DialogTitle>
+                        <DialogDescription>Configure um intervalo de datas e horários</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Data Início *</Label>
+                            <Input 
+                              type="date" 
+                              value={formData.data_inicio}
+                              onChange={(e) => setFormData({...formData, data_inicio: e.target.value})}
+                              min={new Date().toISOString().split('T')[0]}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Data Fim *</Label>
+                            <Input 
+                              type="date" 
+                              value={formData.data_fim}
+                              onChange={(e) => setFormData({...formData, data_fim: e.target.value})}
+                              min={formData.data_inicio}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Hora Início</Label>
+                            <Input 
+                              type="time" 
+                              value={formData.hora_inicio}
+                              onChange={(e) => setFormData({...formData, hora_inicio: e.target.value})}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Hora Fim</Label>
+                            <Input 
+                              type="time" 
+                              value={formData.hora_fim}
+                              onChange={(e) => setFormData({...formData, hora_fim: e.target.value})}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Dias da Semana</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { value: 1, label: 'Seg' },
+                              { value: 2, label: 'Ter' },
+                              { value: 3, label: 'Qua' },
+                              { value: 4, label: 'Qui' },
+                              { value: 5, label: 'Sex' },
+                              { value: 6, label: 'Sáb' },
+                              { value: 7, label: 'Dom' }
+                            ].map(dia => (
+                              <Button
+                                key={dia.value}
+                                type="button"
+                                variant={formData.dias_semana.includes(dia.value) ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const novos = formData.dias_semana.includes(dia.value)
+                                    ? formData.dias_semana.filter(d => d !== dia.value)
+                                    : [...formData.dias_semana, dia.value];
+                                  setFormData({...formData, dias_semana: novos});
+                                }}
+                              >
+                                {dia.label}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Tipo Permitido</Label>
+                          <Select 
+                            value={formData.tipo_permitido}
+                            onValueChange={(value) => setFormData({...formData, tipo_permitido: value})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ambos">Ambos (Online e Presencial)</SelectItem>
+                              <SelectItem value="online">Apenas Online</SelectItem>
+                              <SelectItem value="presencial">Apenas Presencial</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm text-blue-800">
+                            <Clock className="h-4 w-4 inline mr-1" />
+                            <strong>Intervalo fixo:</strong> 1 hora por agendamento
+                          </p>
+                        </div>
+                        <Button onClick={handleCreateHorarios} className="w-full bg-cyan-500 hover:bg-cyan-600">
+                          Criar Horários
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingHorarios ? (
+                  <div className="text-center py-8">
+                    <p className="text-slate-500">Carregando horários...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-slate-600">
+                        Total de horários: <strong>{horarios.length}</strong> | 
+                        Disponíveis: <strong>{horarios.filter(h => h.disponivel).length}</strong> | 
+                        Ocupados: <strong>{horarios.filter(h => !h.disponivel).length}</strong>
+                      </p>
+                    </div>
+                    <div className="max-h-[500px] overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Horário</TableHead>
+                            <TableHead>Duração</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Ações</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {horarios.map((horario) => (
+                            <TableRow key={horario.id}>
+                              <TableCell className="font-medium">
+                                {new Date(horario.data + 'T00:00:00').toLocaleDateString('pt-BR')}
+                              </TableCell>
+                              <TableCell className="font-mono">
+                                {horario.hora_inicio} - {horario.hora_fim}
+                              </TableCell>
+                              <TableCell>{horario.duracao_minutos}min</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {horario.tipo_permitido === 'ambos' ? 'Ambos' : 
+                                   horario.tipo_permitido === 'online' ? 'Online' : 'Presencial'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {horario.disponivel ? (
+                                  <Badge className="bg-green-100 text-green-800">Disponível</Badge>
+                                ) : (
+                                  <Badge className="bg-red-100 text-red-800">Ocupado</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleDeleteHorario(horario.id)}
+                                  disabled={!horario.disponivel}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="agendamentos" className="space-y-6">
             <Card>
               <CardHeader>
