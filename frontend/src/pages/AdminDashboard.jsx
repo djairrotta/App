@@ -780,6 +780,87 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialog para Solicitar Documentos */}
+      <Dialog open={showSolicitarDocDialog} onOpenChange={setShowSolicitarDocDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-blue-900">Solicitar Documentos</DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Enviar solicitação para: <span className="font-semibold text-blue-700">{selectedClient?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="titulo" className="text-sm font-semibold text-slate-700">
+                Título da Solicitação *
+              </Label>
+              <Input
+                id="titulo"
+                placeholder="Ex: Documentos pessoais para processo"
+                value={solicitacaoDoc.titulo}
+                onChange={(e) => setSolicitacaoDoc({ ...solicitacaoDoc, titulo: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="descricao" className="text-sm font-semibold text-slate-700">
+                Descrição / Documentos Necessários *
+              </Label>
+              <Textarea
+                id="descricao"
+                placeholder="Liste os documentos necessários, ex:&#10;- RG e CPF&#10;- Comprovante de residência&#10;- Contratos relacionados ao processo"
+                value={solicitacaoDoc.descricao}
+                onChange={(e) => setSolicitacaoDoc({ ...solicitacaoDoc, descricao: e.target.value })}
+                className="min-h-[120px]"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prazo" className="text-sm font-semibold text-slate-700">
+                Prazo para Envio (Opcional)
+              </Label>
+              <Input
+                id="prazo"
+                type="date"
+                value={solicitacaoDoc.prazo}
+                onChange={(e) => setSolicitacaoDoc({ ...solicitacaoDoc, prazo: e.target.value })}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-2">
+                <Upload className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-900 mb-1">Notificação Automática</p>
+                  <p className="text-xs text-blue-700">
+                    O cliente receberá uma notificação por WhatsApp e verá a solicitação no dashboard dele. Ele poderá fazer upload de qualquer tipo de arquivo.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSolicitarDocDialog(false);
+                  setSolicitacaoDoc({ titulo: '', descricao: '', prazo: '' });
+                }}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSolicitarDocumento}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Enviar Solicitação
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
