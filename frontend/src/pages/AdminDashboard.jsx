@@ -443,6 +443,7 @@ const AdminDashboard = () => {
                               </div>
                             </DialogContent>
                           </Dialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
