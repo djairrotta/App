@@ -362,7 +362,7 @@ const ClientDashboard = () => {
       </div>
 
       <Dialog open={showAppointmentDialog} onOpenChange={setShowAppointmentDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-blue-900">Agendar Consulta com Advogado</DialogTitle>
             <DialogDescription className="text-slate-600">
@@ -370,34 +370,84 @@ const ClientDashboard = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date" className="text-sm font-semibold text-slate-700">
-                  Data da Consulta *
-                </Label>
-                <Input 
-                  id="date" 
-                  type="date" 
-                  value={appointmentData.date} 
-                  onChange={(e) => setAppointmentData({ ...appointmentData, date: e.target.value })}
-                  className="h-11"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="time" className="text-sm font-semibold text-slate-700">
-                  Horário *
-                </Label>
-                <Input 
-                  id="time" 
-                  type="time" 
-                  value={appointmentData.time} 
-                  onChange={(e) => setAppointmentData({ ...appointmentData, time: e.target.value })}
-                  className="h-11"
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="type" className="text-sm font-semibold text-slate-700">
+                Tipo de Consulta *
+              </Label>
+              <Select 
+                value={appointmentData.type} 
+                onValueChange={handleTypeChange}
+              >
+                <SelectTrigger id="type" className="h-11">
+                  <SelectValue placeholder="Selecione o tipo de consulta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">
+                    <div className="flex items-center space-x-2">
+                      <Video className="h-4 w-4 text-blue-600" />
+                      <span>Online (Videochamada)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="presencial">
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="h-4 w-4 text-green-600" />
+                      <span>Presencial (No Escritório)</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="date" className="text-sm font-semibold text-slate-700">
+                Data da Consulta *
+              </Label>
+              <Input 
+                id="date" 
+                type="date" 
+                value={appointmentData.date} 
+                onChange={(e) => handleDateChange(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="h-11"
+                required
+              />
+            </div>
+
+            {appointmentData.date && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-slate-700">
+                  Horários Disponíveis *
+                </Label>
+                {loadingHorarios ? (
+                  <div className="text-center py-8">
+                    <p className="text-slate-500">Carregando horários...</p>
+                  </div>
+                ) : horariosDisponiveis[appointmentData.date]?.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto p-2 border rounded-lg">
+                    {horariosDisponiveis[appointmentData.date].map((horario) => (
+                      <button
+                        key={horario.id}
+                        type="button"
+                        onClick={() => setAppointmentData({ ...appointmentData, time: horario.hora_inicio })}
+                        className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                          appointmentData.time === horario.hora_inicio
+                            ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-25'
+                        }`}
+                      >
+                        {horario.hora_inicio}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border rounded-lg bg-slate-50">
+                    <Calendar className="h-12 w-12 text-slate-300 mx-auto mb-2" />
+                    <p className="text-slate-500 text-sm">Nenhum horário disponível nesta data</p>
+                    <p className="text-slate-400 text-xs mt-1">Tente outra data</p>
+                  </div>
+                )}
+              </div>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="type" className="text-sm font-semibold text-slate-700">
