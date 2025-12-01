@@ -3,6 +3,7 @@ import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
+import AdminLogin from "./pages/AdminLogin";
 import Cadastro from "./pages/Cadastro";
 import Pagamento from "./pages/Pagamento";
 import ClientDashboard from "./pages/ClientDashboard";
