@@ -239,6 +239,373 @@ async def listar_processos_monitorados(user_id: str = Query(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ========================================
+# SISTEMA DE AGENDAMENTOS
+# ========================================
+
+# Modelos
+class HorarioDisponivel(BaseModel):
+    """Horário disponível para agendamento"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    data: str  # YYYY-MM-DD
+    hora_inicio: str  # HH:MM
+    hora_fim: str  # HH:MM
+    duracao_minutos: int = 60
+    disponivel: bool = True
+    tipo_permitido: str = "ambos"  # online, presencial, ambos
+    observacoes: str = ""
+    criado_em: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+class Agendamento(BaseModel):
+    """Agendamento de consulta"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    processo_numero: str
+    data: str
+    hora_inicio: str
+    hora_fim: str
+    tipo: str  # online, presencial
+    status: str = "agendado"  # agendado, confirmado, concluido, cancelado
+    observacoes: str = ""
+    origem: str = "site"  # site, whatsapp, manual
+    criado_por: str = "cliente"  # cliente, admin
+    criado_em: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    atualizado_em: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# ========================================
+# ENDPOINTS ADMIN - Gerenciar Horários
+# ========================================
+
+@api_router.post("/admin/horarios")
+async def criar_horario_disponivel(horario: Dict = Body(...)):
+    """
+    Cria um novo horário disponível (Admin)
+    """
+    try:
+        horario_obj = HorarioDisponivel(**horario)
+        await db.horarios_disponiveis.insert_one(horario_obj.dict())
+        
+        return {
+            "success": True,
+            "message": "Horário criado com sucesso",
+            "horario": horario_obj.dict()
+        }
+    except Exception as e:
+        logger.error(f"Erro ao criar horário: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/horarios")
+async def listar_todos_horarios():
+    """
+    Lista todos os horários (Admin)
+    """
+    try:
+        horarios = await db.horarios_disponiveis.find({}, {"_id": 0}).sort("data", 1).to_list(1000)
+        return {
+            "success": True,
+            "total": len(horarios),
+            "horarios": horarios
+        }
+    except Exception as e:
+        logger.error(f"Erro ao listar horários: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/admin/horarios/{horario_id}")
+async def atualizar_horario(horario_id: str, dados: Dict = Body(...)):
+    """
+    Atualiza um horário (Admin)
+    """
+    try:
+        result = await db.horarios_disponiveis.update_one(
+            {"id": horario_id},
+            {"$set": dados}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Horário não encontrado")
+        
+        return {"success": True, "message": "Horário atualizado com sucesso"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao atualizar horário: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/admin/horarios/{horario_id}")
+async def deletar_horario(horario_id: str):
+    """
+    Deleta um horário (Admin)
+    """
+    try:
+        result = await db.horarios_disponiveis.delete_one({"id": horario_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Horário não encontrado")
+        
+        return {"success": True, "message": "Horário deletado com sucesso"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao deletar horário: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/admin/horarios/lote")
+async def criar_horarios_em_lote(dados: Dict = Body(...)):
+    """
+    Cria múltiplos horários de uma vez (Admin)
+    Exemplo: todos os dias úteis de uma semana, de 9h às 18h, com slots de 1h
+    """
+    try:
+        data_inicio = dados.get("data_inicio")  # YYYY-MM-DD
+        data_fim = dados.get("data_fim")
+        hora_inicio = dados.get("hora_inicio")  # HH:MM
+        hora_fim = dados.get("hora_fim")
+        duracao_minutos = dados.get("duracao_minutos", 60)
+        dias_semana = dados.get("dias_semana", [1, 2, 3, 4, 5])  # 1=Seg, 7=Dom
+        tipo_permitido = dados.get("tipo_permitido", "ambos")
+        
+        horarios_criados = []
+        
+        # Converte strings para datetime
+        inicio = datetime.strptime(data_inicio, "%Y-%m-%d")
+        fim = datetime.strptime(data_fim, "%Y-%m-%d")
+        
+        current = inicio
+        while current <= fim:
+            # Verifica se é dia da semana permitido (1=Segunda, 7=Domingo)
+            if current.isoweekday() in dias_semana:
+                # Cria slots de horário para este dia
+                hora_atual = datetime.strptime(hora_inicio, "%H:%M")
+                hora_limite = datetime.strptime(hora_fim, "%H:%M")
+                
+                while hora_atual < hora_limite:
+                    hora_fim_slot = hora_atual + timedelta(minutes=duracao_minutos)
+                    
+                    horario = HorarioDisponivel(
+                        data=current.strftime("%Y-%m-%d"),
+                        hora_inicio=hora_atual.strftime("%H:%M"),
+                        hora_fim=hora_fim_slot.strftime("%H:%M"),
+                        duracao_minutos=duracao_minutos,
+                        tipo_permitido=tipo_permitido
+                    )
+                    
+                    await db.horarios_disponiveis.insert_one(horario.dict())
+                    horarios_criados.append(horario.dict())
+                    
+                    hora_atual = hora_fim_slot
+            
+            current += timedelta(days=1)
+        
+        return {
+            "success": True,
+            "message": f"{len(horarios_criados)} horários criados com sucesso",
+            "total": len(horarios_criados)
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao criar horários em lote: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========================================
+# ENDPOINTS CLIENTE - Consultar e Agendar
+# ========================================
+
+@api_router.get("/horarios/disponiveis")
+async def listar_horarios_disponiveis(
+    data_inicio: str = Query(...),
+    data_fim: Optional[str] = Query(None),
+    tipo: Optional[str] = Query(None)
+):
+    """
+    Lista horários disponíveis para agendamento (Cliente)
+    """
+    try:
+        query = {
+            "disponivel": True,
+            "data": {"$gte": data_inicio}
+        }
+        
+        if data_fim:
+            query["data"]["$lte"] = data_fim
+        
+        if tipo and tipo != "ambos":
+            query["$or"] = [
+                {"tipo_permitido": tipo},
+                {"tipo_permitido": "ambos"}
+            ]
+        
+        horarios = await db.horarios_disponiveis.find(query, {"_id": 0}).sort("data", 1).to_list(1000)
+        
+        return {
+            "success": True,
+            "total": len(horarios),
+            "horarios": horarios
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao listar horários disponíveis: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/agendamentos")
+async def criar_agendamento(agendamento: Dict = Body(...)):
+    """
+    Cria um novo agendamento (Cliente)
+    """
+    try:
+        # Verifica se o horário ainda está disponível
+        horario = await db.horarios_disponiveis.find_one({
+            "data": agendamento["data"],
+            "hora_inicio": agendamento["hora_inicio"],
+            "disponivel": True
+        })
+        
+        if not horario:
+            raise HTTPException(
+                status_code=400,
+                detail="Horário não está mais disponível"
+            )
+        
+        # Cria o agendamento
+        agendamento_obj = Agendamento(**agendamento)
+        await db.agendamentos.insert_one(agendamento_obj.dict())
+        
+        # Marca o horário como ocupado
+        await db.horarios_disponiveis.update_one(
+            {"id": horario["id"]},
+            {"$set": {"disponivel": False}}
+        )
+        
+        return {
+            "success": True,
+            "message": "Agendamento realizado com sucesso",
+            "agendamento": agendamento_obj.dict()
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao criar agendamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/agendamentos/usuario/{user_id}")
+async def listar_agendamentos_usuario(user_id: str):
+    """
+    Lista agendamentos de um usuário
+    """
+    try:
+        agendamentos = await db.agendamentos.find(
+            {"user_id": user_id},
+            {"_id": 0}
+        ).sort("data", -1).to_list(1000)
+        
+        return {
+            "success": True,
+            "total": len(agendamentos),
+            "agendamentos": agendamentos
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao listar agendamentos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/agendamentos")
+async def listar_todos_agendamentos():
+    """
+    Lista todos os agendamentos (Admin)
+    """
+    try:
+        agendamentos = await db.agendamentos.find({}, {"_id": 0}).sort("data", -1).to_list(1000)
+        
+        return {
+            "success": True,
+            "total": len(agendamentos),
+            "agendamentos": agendamentos
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao listar todos agendamentos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/admin/agendamentos/{agendamento_id}")
+async def atualizar_status_agendamento(agendamento_id: str, dados: Dict = Body(...)):
+    """
+    Atualiza status de um agendamento (Admin)
+    """
+    try:
+        dados["atualizado_em"] = datetime.now(timezone.utc).isoformat()
+        
+        result = await db.agendamentos.update_one(
+            {"id": agendamento_id},
+            {"$set": dados}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Agendamento não encontrado")
+        
+        # Se foi cancelado, libera o horário
+        if dados.get("status") == "cancelado":
+            agendamento = await db.agendamentos.find_one({"id": agendamento_id})
+            if agendamento:
+                await db.horarios_disponiveis.update_one(
+                    {
+                        "data": agendamento["data"],
+                        "hora_inicio": agendamento["hora_inicio"]
+                    },
+                    {"$set": {"disponivel": True}}
+                )
+        
+        return {"success": True, "message": "Agendamento atualizado com sucesso"}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao atualizar agendamento: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/admin/agendamentos/manual")
+async def criar_agendamento_manual(dados: Dict = Body(...)):
+    """
+    Cria agendamento manual pelo admin (via WhatsApp, telefone, etc)
+    """
+    try:
+        dados["origem"] = "manual"
+        dados["criado_por"] = "admin"
+        
+        agendamento_obj = Agendamento(**dados)
+        await db.agendamentos.insert_one(agendamento_obj.dict())
+        
+        # Marca horário como ocupado
+        await db.horarios_disponiveis.update_one(
+            {
+                "data": dados["data"],
+                "hora_inicio": dados["hora_inicio"]
+            },
+            {"$set": {"disponivel": False}}
+        )
+        
+        return {
+            "success": True,
+            "message": "Agendamento manual criado com sucesso",
+            "agendamento": agendamento_obj.dict()
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao criar agendamento manual: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
