@@ -361,6 +361,21 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                         <div className="space-y-2">
+                          <Label>Duração do Agendamento</Label>
+                          <Select 
+                            value={formData.duracao_minutos.toString()}
+                            onValueChange={(value) => setFormData({...formData, duracao_minutos: parseInt(value)})}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="30">30 minutos</SelectItem>
+                              <SelectItem value="60">1 hora</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
                           <Label>Dias da Semana</Label>
                           <div className="flex flex-wrap gap-2">
                             {[
