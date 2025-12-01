@@ -904,6 +904,274 @@ async def atualizar_status_solicitacao(solicitacao_id: str, dados: Dict = Body(.
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ========================================
+# WEBHOOK WHATSAPP - RECEBER MENSAGENS
+# ========================================
+
+@api_router.post("/webhook/whatsapp")
+async def webhook_whatsapp(payload: Dict = Body(...)):
+    """
+    Webhook para receber mensagens do WhatsApp via Z-API
+    
+    Tipos de mensagem suportados:
+    - Texto
+    - Áudio (com transcrição automática)
+    - Imagem
+    - Documento
+    """
+    try:
+        logger.info(f"Webhook WhatsApp recebido: {payload}")
+        
+        # Extrair dados da mensagem
+        phone = payload.get('phone', '').replace('@c.us', '')
+        message_type = payload.get('type', '')
+        from_me = payload.get('fromMe', False)
+        
+        # Ignorar mensagens enviadas por nós
+        if from_me:
+            return {"success": True, "message": "Mensagem própria ignorada"}
+        
+        # Buscar cliente pelo telefone
+        # Remove todos os caracteres não numéricos e tenta encontrar
+        phone_clean = ''.join(filter(str.isdigit, phone))
+        
+        # Remover código do país se presente
+        if phone_clean.startswith('55') and len(phone_clean) > 11:
+            phone_clean = phone_clean[2:]
+        
+        # Buscar cliente no banco
+        # Formato: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+        phone_patterns = [
+            f"({phone_clean[:2]}) {phone_clean[2:7]}-{phone_clean[7:]}",
+            f"({phone_clean[:2]}) {phone_clean[2:6]}-{phone_clean[6:]}",
+            phone
+        ]
+        
+        client = None
+        for pattern in phone_patterns:
+            client = await db.users.find_one({"phone": pattern})
+            if client:
+                break
+        
+        if not client:
+            logger.warning(f"Cliente não encontrado para telefone: {phone}")
+            # Salvar como mensagem não identificada
+            return {"success": False, "message": "Cliente não encontrado"}
+        
+        client_id = client.get("id") or str(client.get("_id"))
+        client_name = client.get("name", "Cliente")
+        
+        # Salvar mensagem no backup
+        storage_service.save_whatsapp_message(client_id, client_name, payload)
+        
+        # Processar por tipo de mensagem
+        if message_type == "chat":
+            # Mensagem de texto
+            text = payload.get('body', '')
+            logger.info(f"Mensagem de texto de {client_name}: {text}")
+            
+            # Criar notificação para o admin
+            await db.notifications.insert_one({
+                "type": "whatsapp_message",
+                "client_id": client_id,
+                "client_name": client_name,
+                "message": text,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+        
+        elif message_type == "audio" or message_type == "ptt":
+            # Mensagem de áudio
+            audio_url = payload.get('url', '')
+            
+            if audio_url:
+                # Download do áudio
+                audio_response = http_requests.get(audio_url, timeout=30)
+                if audio_response.status_code == 200:
+                    audio_data = audio_response.content
+                    filename = f"audio_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ogg"
+                    
+                    # Salvar áudio temporariamente para transcrição
+                    temp_path = f"/tmp/{filename}"
+                    with open(temp_path, 'wb') as f:
+                        f.write(audio_data)
+                    
+                    # Transcrever áudio
+                    transcription = transcription_service.transcribe_audio(temp_path)
+                    
+                    # Salvar áudio e transcrição
+                    storage_service.save_whatsapp_audio(
+                        client_id, 
+                        client_name, 
+                        audio_data, 
+                        filename,
+                        transcription
+                    )
+                    
+                    # Criar notificação
+                    await db.notifications.insert_one({
+                        "type": "whatsapp_audio",
+                        "client_id": client_id,
+                        "client_name": client_name,
+                        "transcription": transcription,
+                        "audio_filename": filename,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    })
+                    
+                    logger.info(f"Áudio processado de {client_name}")
+        
+        elif message_type == "image":
+            # Imagem
+            image_url = payload.get('url', '')
+            caption = payload.get('caption', '')
+            
+            if image_url:
+                # Download da imagem
+                image_response = http_requests.get(image_url, timeout=30)
+                if image_response.status_code == 200:
+                    image_data = image_response.content
+                    
+                    # Determinar extensão
+                    content_type = image_response.headers.get('content-type', '')
+                    ext = 'jpg'
+                    if 'png' in content_type:
+                        ext = 'png'
+                    elif 'gif' in content_type:
+                        ext = 'gif'
+                    
+                    filename = f"image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
+                    
+                    # Salvar imagem
+                    image_path = storage_service.save_whatsapp_image(
+                        client_id, 
+                        client_name, 
+                        image_data, 
+                        filename
+                    )
+                    
+                    # Criar solicitação de documento automaticamente
+                    solicitacao = SolicitacaoDocumento(
+                        user_id=client_id,
+                        user_name=client_name,
+                        solicitado_por="whatsapp",
+                        titulo=f"Documento via WhatsApp - {filename}",
+                        descricao=f"Imagem enviada via WhatsApp{': ' + caption if caption else ''}",
+                        status="enviado"
+                    )
+                    
+                    await db.solicitacoes_documento.insert_one(solicitacao.dict())
+                    
+                    # Criar notificação
+                    await db.notifications.insert_one({
+                        "type": "whatsapp_image",
+                        "client_id": client_id,
+                        "client_name": client_name,
+                        "filename": filename,
+                        "caption": caption,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    })
+                    
+                    logger.info(f"Imagem recebida de {client_name}")
+        
+        elif message_type == "document":
+            # Documento
+            doc_url = payload.get('url', '')
+            doc_filename = payload.get('filename', 'document.pdf')
+            
+            if doc_url:
+                # Download do documento
+                doc_response = http_requests.get(doc_url, timeout=30)
+                if doc_response.status_code == 200:
+                    doc_data = doc_response.content
+                    
+                    # Salvar documento
+                    doc_path = storage_service.save_whatsapp_document(
+                        client_id, 
+                        client_name, 
+                        doc_data, 
+                        doc_filename
+                    )
+                    
+                    # Criar solicitação de documento automaticamente
+                    solicitacao = SolicitacaoDocumento(
+                        user_id=client_id,
+                        user_name=client_name,
+                        solicitado_por="whatsapp",
+                        titulo=f"Documento via WhatsApp - {doc_filename}",
+                        descricao=f"Documento enviado via WhatsApp",
+                        status="enviado"
+                    )
+                    
+                    await db.solicitacoes_documento.insert_one(solicitacao.dict())
+                    
+                    # Criar notificação
+                    await db.notifications.insert_one({
+                        "type": "whatsapp_document",
+                        "client_id": client_id,
+                        "client_name": client_name,
+                        "filename": doc_filename,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    })
+                    
+                    logger.info(f"Documento recebido de {client_name}")
+        
+        return {"success": True, "message": "Mensagem processada com sucesso"}
+    
+    except Exception as e:
+        logger.error(f"Erro ao processar webhook: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@api_router.get("/admin/notifications")
+async def listar_notificacoes():
+    """
+    Lista notificações recentes do WhatsApp (Admin)
+    """
+    try:
+        notifications = await db.notifications.find(
+            {},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(50).to_list(50)
+        
+        return {
+            "success": True,
+            "total": len(notifications),
+            "notifications": notifications
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao listar notificações: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/admin/client/{client_id}/files")
+async def listar_arquivos_cliente(client_id: str):
+    """
+    Lista todos os arquivos de um cliente (Admin)
+    """
+    try:
+        # Buscar nome do cliente
+        client = await db.users.find_one({"id": client_id})
+        if not client:
+            raise HTTPException(status_code=404, detail="Cliente não encontrado")
+        
+        client_name = client.get("name", "Cliente")
+        
+        files = storage_service.list_client_files(client_id, client_name)
+        
+        return {
+            "success": True,
+            "client_id": client_id,
+            "client_name": client_name,
+            "files": files
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao listar arquivos: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
