@@ -21,12 +21,35 @@ class CNJService:
         
         # Mapeamento de tribunais para endpoints
         self.tribunal_endpoints = {
-            'TRF3': 'api_publica_trf3',
-            'TJSP': 'api_publica_tjsp',
-            'TRT15': 'api_publica_trt15',
-            'TJM': 'api_publica_tjm',  # Verificar se existe
+            # Tribunais Superiores
             'STJ': 'api_publica_stj',
             'TST': 'api_publica_tst',
+            'TSE': 'api_publica_tse',
+            'STM': 'api_publica_stm',
+            # Justiça Federal
+            'TRF1': 'api_publica_trf1',
+            'TRF2': 'api_publica_trf2',
+            'TRF3': 'api_publica_trf3',
+            'TRF4': 'api_publica_trf4',
+            'TRF5': 'api_publica_trf5',
+            'TRF6': 'api_publica_trf6',
+            # Justiça Estadual
+            'TJSP': 'api_publica_tjsp',
+            'TJRJ': 'api_publica_tjrj',
+            'TJMG': 'api_publica_tjmg',
+            'TJRS': 'api_publica_tjrs',
+            'TJPR': 'api_publica_tjpr',
+            'TJSC': 'api_publica_tjsc',
+            'TJBA': 'api_publica_tjba',
+            # Justiça do Trabalho
+            'TRT1': 'api_publica_trt1',
+            'TRT2': 'api_publica_trt2',
+            'TRT3': 'api_publica_trt3',
+            'TRT15': 'api_publica_trt15',
+            # Justiça Militar
+            'TJMSP': 'api_publica_tjmsp',
+            'TJMMG': 'api_publica_tjmmg',
+            'TJMRS': 'api_publica_tjmrs',
         }
     
     def _make_request(self, tribunal: str, payload: Dict) -> Optional[Dict]:
