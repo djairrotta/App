@@ -237,8 +237,9 @@ const ClientDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="processos" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="processos">Processos</TabsTrigger>
+            <TabsTrigger value="documentos">Documentos</TabsTrigger>
             <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
             <TabsTrigger value="perfil">Perfil</TabsTrigger>
           </TabsList>
