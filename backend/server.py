@@ -11,6 +11,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 from services.cnj_service import cnj_service
+from services.whatsapp_service import whatsapp_service
 import shutil
 
 
