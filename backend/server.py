@@ -653,6 +653,21 @@ async def criar_solicitacao_documento(dados: Dict = Body(...)):
         solicitacao = SolicitacaoDocumento(**dados)
         await db.solicitacoes_documento.insert_one(solicitacao.dict())
         
+        # Buscar telefone do cliente para enviar WhatsApp
+        # Em produção, buscar do banco de dados
+        # Por enquanto, usar dados mockados ou do payload
+        telefone = dados.get('user_phone', '')
+        
+        if telefone:
+            # Enviar notificação via WhatsApp
+            whatsapp_service.enviar_solicitacao_documentos(
+                nome=dados.get('user_name', ''),
+                phone=telefone,
+                titulo=solicitacao.titulo,
+                descricao=solicitacao.descricao,
+                prazo=solicitacao.prazo
+            )
+        
         return {
             "success": True,
             "message": "Solicitação enviada com sucesso",
