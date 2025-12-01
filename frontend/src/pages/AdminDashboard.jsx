@@ -17,8 +17,14 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [selectedClient, setSelectedClient] = useState(null);
   const [showCreateHorariosDialog, setShowCreateHorariosDialog] = useState(false);
+  const [showSolicitarDocDialog, setShowSolicitarDocDialog] = useState(false);
   const [horarios, setHorarios] = useState([]);
   const [loadingHorarios, setLoadingHorarios] = useState(false);
+  const [solicitacaoDoc, setSolicitacaoDoc] = useState({
+    titulo: '',
+    descricao: '',
+    prazo: ''
+  });
   const [formData, setFormData] = useState({
     data_inicio: '',
     data_fim: '',
