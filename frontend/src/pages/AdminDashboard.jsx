@@ -221,9 +221,9 @@ const AdminDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
-                      <TableHead>CPF</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>E-mail</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead>Data de Aniversário</TableHead>
                       <TableHead>Processos</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
@@ -232,18 +232,15 @@ const AdminDashboard = () => {
                     {mockClients.map((client) => (
                       <TableRow key={client.id}>
                         <TableCell className="font-medium">{client.name}</TableCell>
-                        <TableCell className="font-mono text-sm">{client.cpf}</TableCell>
+                        <TableCell className="text-sm">{client.email}</TableCell>
+                        <TableCell className="text-sm">{client.phone}</TableCell>
                         <TableCell>
-                          <Badge variant={client.plan === 'premium' ? 'default' : 'secondary'}>
-                            {client.plan === 'premium' ? 'Premium' : 'Básico'}
-                          </Badge>
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="h-4 w-4 text-pink-500" />
+                            <span className="font-medium text-pink-600">{client.birthDate}</span>
+                          </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge className={client.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}>
-                            {client.paymentStatus === 'paid' ? 'Ativo' : 'Pendente'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{client.processCount}</TableCell>
+                        <TableCell className="text-center font-semibold">{client.processCount}</TableCell>
                         <TableCell>
                           <Dialog>
                             <DialogTrigger asChild>
