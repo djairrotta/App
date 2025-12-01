@@ -320,12 +320,24 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell className="text-center font-semibold">{client.processCount}</TableCell>
                         <TableCell>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="sm" onClick={() => setSelectedClient(client)}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                              onClick={() => {
+                                setSelectedClient(client);
+                                setShowSolicitarDocDialog(true);
+                              }}
+                            >
+                              <Upload className="h-4 w-4" />
+                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="sm" onClick={() => setSelectedClient(client)}>
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
                             <DialogContent className="sm:max-w-[500px]">
                               <DialogHeader>
                                 <DialogTitle className="text-xl font-bold text-blue-900">Detalhes do Cliente</DialogTitle>
