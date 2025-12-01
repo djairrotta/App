@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { FileText, LogOut, Users, AlertCircle, Settings, Calendar, Eye } from 'lucide-react';
+import { FileText, LogOut, Users, AlertCircle, Settings, Calendar, Eye, Plus, Clock, Trash2 } from 'lucide-react';
 import { mockClients, mockStats, mockAppointments, mockProcesses } from '../mockData';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { toast } from '../hooks/use-toast';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
