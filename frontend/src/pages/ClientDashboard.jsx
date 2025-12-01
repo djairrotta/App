@@ -34,23 +34,107 @@ const ClientDashboard = () => {
     navigate('/login');
   };
 
-  const handleScheduleAppointment = () => {
+  const buscarHorariosDisponiveis = async (data, tipo = 'ambos') => {
+    if (!data) return;
+    
+    setLoadingHorarios(true);
+    try {
+      const dataFim = new Date(data);
+      dataFim.setDate(dataFim.getDate() + 7); // 7 dias à frente
+      
+      const response = await fetch(
+        `${BACKEND_URL}/api/horarios/disponiveis?data_inicio=${data}&data_fim=${dataFim.toISOString().split('T')[0]}&tipo=${tipo}`
+      );
+      const result = await response.json();
+      
+      if (result.success) {
+        // Agrupa horários por data
+        const horariosPorData = {};
+        result.horarios.forEach(h => {
+          if (!horariosPorData[h.data]) {
+            horariosPorData[h.data] = [];
+          }
+          horariosPorData[h.data].push(h);
+        });
+        setHorariosDisponiveis(horariosPorData);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar horários:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar os horários disponíveis.',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingHorarios(false);
+    }
+  };
+
+  const handleDateChange = (date) => {
+    setAppointmentData({ ...appointmentData, date, time: '' });
+    buscarHorariosDisponiveis(date, appointmentData.type);
+  };
+
+  const handleTypeChange = (type) => {
+    setAppointmentData({ ...appointmentData, type, time: '' });
+    if (appointmentData.date) {
+      buscarHorariosDisponiveis(appointmentData.date, type);
+    }
+  };
+
+  const handleScheduleAppointment = async () => {
     if (!appointmentData.date || !appointmentData.time || !appointmentData.type) {
       toast({ 
         title: 'Campos obrigatórios', 
-        description: 'Por favor, preencha data, horário e tipo de consulta.',
+        description: 'Por favor, selecione data, horário e tipo de consulta.',
         variant: 'destructive'
       });
       return;
     }
 
-    const typeLabel = appointmentData.type === 'online' ? 'Online' : 'Presencial';
-    toast({ 
-      title: 'Agendamento solicitado!', 
-      description: `Consulta ${typeLabel} agendada para ${appointmentData.date} às ${appointmentData.time}. Você receberá uma confirmação por WhatsApp.` 
-    });
-    setShowAppointmentDialog(false);
-    setAppointmentData({ date: '', time: '', type: 'online', notes: '' });
+    try {
+      // Encontra o horário selecionado para pegar hora_fim
+      const horarioSelecionado = horariosDisponiveis[appointmentData.date]?.find(
+        h => h.hora_inicio === appointmentData.time
+      );
+
+      const response = await fetch(`${BACKEND_URL}/api/agendamentos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: '1',
+          user_name: userName,
+          processo_numero: selectedProcess?.processNumber,
+          data: appointmentData.date,
+          hora_inicio: appointmentData.time,
+          hora_fim: horarioSelecionado?.hora_fim || appointmentData.time,
+          tipo: appointmentData.type,
+          observacoes: appointmentData.notes,
+          origem: 'site'
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const typeLabel = appointmentData.type === 'online' ? 'Online' : 'Presencial';
+        toast({ 
+          title: 'Agendamento confirmado!', 
+          description: `Consulta ${typeLabel} agendada para ${appointmentData.date} às ${appointmentData.time}. Você receberá uma confirmação por WhatsApp.` 
+        });
+        setShowAppointmentDialog(false);
+        setAppointmentData({ date: '', time: '', type: 'online', notes: '' });
+        setHorariosDisponiveis([]);
+      } else {
+        throw new Error(result.detail || 'Erro ao agendar');
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro ao agendar',
+        description: error.message || 'Tente novamente mais tarde.',
+        variant: 'destructive'
+      });
+    }
   };
 
   return (
