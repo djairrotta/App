@@ -450,47 +450,6 @@ const ClientDashboard = () => {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="type" className="text-sm font-semibold text-slate-700">
-                Tipo de Consulta *
-              </Label>
-              <Select 
-                value={appointmentData.type} 
-                onValueChange={(value) => setAppointmentData({ ...appointmentData, type: value })}
-              >
-                <SelectTrigger id="type" className="h-11">
-                  <SelectValue placeholder="Selecione o tipo de consulta" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="online">
-                    <div className="flex items-center space-x-2">
-                      <Video className="h-4 w-4 text-blue-600" />
-                      <span>Online (Videochamada)</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="presencial">
-                    <div className="flex items-center space-x-2">
-                      <Building2 className="h-4 w-4 text-green-600" />
-                      <span>Presencial (No Escritório)</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-slate-500 mt-1">
-                {appointmentData.type === 'online' ? (
-                  <span className="flex items-center text-blue-600">
-                    <Video className="h-3 w-3 mr-1" />
-                    Link para videochamada será enviado por WhatsApp
-                  </span>
-                ) : (
-                  <span className="flex items-center text-green-600">
-                    <Building2 className="h-3 w-3 mr-1" />
-                    Endereço do escritório será enviado por WhatsApp
-                  </span>
-                )}
-              </p>
-            </div>
-            
-            <div className="space-y-2">
               <Label htmlFor="notes" className="text-sm font-semibold text-slate-700">
                 Observações (Opcional)
               </Label>
