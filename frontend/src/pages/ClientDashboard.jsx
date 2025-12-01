@@ -275,25 +275,125 @@ const ClientDashboard = () => {
       </div>
 
       <Dialog open={showAppointmentDialog} onOpenChange={setShowAppointmentDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Agendar Consulta com Advogado</DialogTitle>
-            <DialogDescription>Processo: {selectedProcess?.processNumber}</DialogDescription>
+            <DialogTitle className="text-xl font-bold text-blue-900">Agendar Consulta com Advogado</DialogTitle>
+            <DialogDescription className="text-slate-600">
+              Processo: <span className="font-mono font-semibold text-blue-700">{selectedProcess?.processNumber}</span>
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Data</Label>
-              <Input id="date" type="date" value={appointmentData.date} onChange={(e) => setAppointmentData({ ...appointmentData, date: e.target.value })} />
+          <div className="space-y-5 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date" className="text-sm font-semibold text-slate-700">
+                  Data da Consulta *
+                </Label>
+                <Input 
+                  id="date" 
+                  type="date" 
+                  value={appointmentData.date} 
+                  onChange={(e) => setAppointmentData({ ...appointmentData, date: e.target.value })}
+                  className="h-11"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="time" className="text-sm font-semibold text-slate-700">
+                  Horário *
+                </Label>
+                <Input 
+                  id="time" 
+                  type="time" 
+                  value={appointmentData.time} 
+                  onChange={(e) => setAppointmentData({ ...appointmentData, time: e.target.value })}
+                  className="h-11"
+                  required
+                />
+              </div>
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="time">Horário</Label>
-              <Input id="time" type="time" value={appointmentData.time} onChange={(e) => setAppointmentData({ ...appointmentData, time: e.target.value })} />
+              <Label htmlFor="type" className="text-sm font-semibold text-slate-700">
+                Tipo de Consulta *
+              </Label>
+              <Select 
+                value={appointmentData.type} 
+                onValueChange={(value) => setAppointmentData({ ...appointmentData, type: value })}
+              >
+                <SelectTrigger id="type" className="h-11">
+                  <SelectValue placeholder="Selecione o tipo de consulta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">
+                    <div className="flex items-center space-x-2">
+                      <Video className="h-4 w-4 text-blue-600" />
+                      <span>Online (Videochamada)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="presencial">
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="h-4 w-4 text-green-600" />
+                      <span>Presencial (No Escritório)</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500 mt-1">
+                {appointmentData.type === 'online' ? (
+                  <span className="flex items-center text-blue-600">
+                    <Video className="h-3 w-3 mr-1" />
+                    Link para videochamada será enviado por WhatsApp
+                  </span>
+                ) : (
+                  <span className="flex items-center text-green-600">
+                    <Building2 className="h-3 w-3 mr-1" />
+                    Endereço do escritório será enviado por WhatsApp
+                  </span>
+                )}
+              </p>
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea id="notes" placeholder="Descreva o motivo da consulta..." value={appointmentData.notes} onChange={(e) => setAppointmentData({ ...appointmentData, notes: e.target.value })} />
+              <Label htmlFor="notes" className="text-sm font-semibold text-slate-700">
+                Observações (Opcional)
+              </Label>
+              <Textarea 
+                id="notes" 
+                placeholder="Descreva brevemente o motivo da consulta ou dúvidas específicas sobre o processo..." 
+                value={appointmentData.notes} 
+                onChange={(e) => setAppointmentData({ ...appointmentData, notes: e.target.value })}
+                className="min-h-[100px]"
+              />
             </div>
-            <Button onClick={handleScheduleAppointment} className="w-full bg-cyan-500 hover:bg-cyan-600">Confirmar Agendamento</Button>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-2">
+                <Calendar className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-900 mb-1">Confirmação por WhatsApp</p>
+                  <p className="text-xs text-blue-700">
+                    Após o agendamento, você receberá uma mensagem de confirmação no WhatsApp cadastrado com todos os detalhes da consulta.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAppointmentDialog(false)} 
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleScheduleAppointment} 
+                className="flex-1 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Confirmar Agendamento
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
