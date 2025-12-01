@@ -25,8 +25,16 @@ const ClientDashboard = () => {
   });
   const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
   const [loadingHorarios, setLoadingHorarios] = useState(false);
+  const [solicitacoes, setSolicitacoes] = useState([]);
+  const [loadingSolicitacoes, setLoadingSolicitacoes] = useState(false);
+  const [selectedSolicitacao, setSelectedSolicitacao] = useState(null);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadObservacoes, setUploadObservacoes] = useState('');
+  const [uploading, setUploading] = useState(false);
   const userName = localStorage.getItem('userName') || 'Cliente';
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+  const userId = '1'; // Simulado - em produção viria do localStorage/auth
 
   const handleLogout = () => {
     localStorage.clear();
