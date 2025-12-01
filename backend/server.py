@@ -35,6 +35,9 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 
+# OAuth2
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
 # Define Models
 class StatusCheck(BaseModel):
     model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
@@ -45,6 +48,23 @@ class StatusCheck(BaseModel):
 
 class StatusCheckCreate(BaseModel):
     client_name: str
+
+# Modelos de Autenticação
+class AdminRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class AdminLogin(BaseModel):
+    email: str
+    password: str
+
+class GoogleLogin(BaseModel):
+    token: str
+
+class AppleLogin(BaseModel):
+    token: str
+    user_data: Optional[Dict] = None
 
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
