@@ -16,11 +16,102 @@ import { toast } from '../hooks/use-toast';
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [selectedClient, setSelectedClient] = useState(null);
+  const [showCreateHorariosDialog, setShowCreateHorariosDialog] = useState(false);
+  const [horarios, setHorarios] = useState([]);
+  const [loadingHorarios, setLoadingHorarios] = useState(false);
+  const [formData, setFormData] = useState({
+    data_inicio: '',
+    data_fim: '',
+    hora_inicio: '09:00',
+    hora_fim: '18:00',
+    duracao_minutos: 60,
+    dias_semana: [1, 2, 3, 4, 5],
+    tipo_permitido: 'ambos'
+  });
   const adminName = localStorage.getItem('userName') || 'Admin';
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
   const handleLogout = () => {
     localStorage.clear();
     navigate('/login');
+  };
+
+  const buscarHorarios = async () => {
+    setLoadingHorarios(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/horarios`);
+      const result = await response.json();
+      if (result.success) {
+        setHorarios(result.horarios);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar horários:', error);
+    } finally {
+      setLoadingHorarios(false);
+    }
+  };
+
+  useEffect(() => {
+    buscarHorarios();
+  }, []);
+
+  const handleCreateHorarios = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/horarios/lote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: 'Horários criados!',
+          description: `${result.total} horários foram criados com sucesso.`
+        });
+        setShowCreateHorariosDialog(false);
+        buscarHorarios();
+        setFormData({
+          data_inicio: '',
+          data_fim: '',
+          hora_inicio: '09:00',
+          hora_fim: '18:00',
+          duracao_minutos: 60,
+          dias_semana: [1, 2, 3, 4, 5],
+          tipo_permitido: 'ambos'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível criar os horários.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeleteHorario = async (horarioId) => {
+    if (!confirm('Deseja realmente excluir este horário?')) return;
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/horarios/${horarioId}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({ title: 'Horário excluído com sucesso!' });
+        buscarHorarios();
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir o horário.',
+        variant: 'destructive'
+      });
+    }
   };
 
   return (
