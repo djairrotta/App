@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { FileText, LogOut, Users, AlertCircle, Settings, Calendar, Eye, Plus, Clock, Trash2, Video, Phone } from 'lucide-react';
+import { FileText, LogOut, Users, AlertCircle, Settings, Calendar, Eye, Plus, Clock, Trash2, Video, Phone, Cake } from 'lucide-react';
 import { mockClients, mockStats, mockAppointments, mockProcesses } from '../mockData';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
