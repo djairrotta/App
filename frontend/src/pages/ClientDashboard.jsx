@@ -23,7 +23,10 @@ const ClientDashboard = () => {
     type: 'online', 
     notes: '' 
   });
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
+  const [loadingHorarios, setLoadingHorarios] = useState(false);
   const userName = localStorage.getItem('userName') || 'Cliente';
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
   const handleLogout = () => {
     localStorage.clear();
