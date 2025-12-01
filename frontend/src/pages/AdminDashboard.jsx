@@ -151,6 +151,46 @@ const AdminDashboard = () => {
     return parseInt(day) === currentDay && parseInt(month) === currentMonth;
   };
 
+  const handleSolicitarDocumento = async () => {
+    if (!solicitacaoDoc.titulo || !solicitacaoDoc.descricao) {
+      toast({
+        title: 'Campos obrigatórios',
+        description: 'Preencha o título e descrição da solicitação.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/solicitacoes-documento`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: selectedClient?.id,
+          user_name: selectedClient?.name,
+          ...solicitacaoDoc
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: 'Solicitação enviada!',
+          description: `${selectedClient?.name} receberá uma notificação para enviar os documentos.`
+        });
+        setShowSolicitarDocDialog(false);
+        setSolicitacaoDoc({ titulo: '', descricao: '', prazo: '' });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível enviar a solicitação.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-gradient-to-r from-blue-700 to-blue-800 border-b shadow-lg">
