@@ -42,6 +42,72 @@ const ClientDashboard = () => {
     navigate('/login');
   };
 
+  const buscarSolicitacoes = async () => {
+    setLoadingSolicitacoes(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/solicitacoes-documento/usuario/${userId}`);
+      const result = await response.json();
+      if (result.success) {
+        setSolicitacoes(result.solicitacoes);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar solicitações:', error);
+    } finally {
+      setLoadingSolicitacoes(false);
+    }
+  };
+
+  React.useEffect(() => {
+    buscarSolicitacoes();
+  }, []);
+
+  const handleUploadDocumento = async () => {
+    if (!uploadFile) {
+      toast({
+        title: 'Selecione um arquivo',
+        description: 'Por favor, escolha um arquivo para enviar.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('solicitacao_id', selectedSolicitacao.id);
+      formData.append('user_id', userId);
+      formData.append('user_name', userName);
+      formData.append('observacoes', uploadObservacoes);
+
+      const response = await fetch(`${BACKEND_URL}/api/documentos/upload`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: 'Documento enviado!',
+          description: 'Seu documento foi enviado com sucesso.'
+        });
+        setShowUploadDialog(false);
+        setUploadFile(null);
+        setUploadObservacoes('');
+        buscarSolicitacoes(); // Atualiza a lista
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro ao enviar',
+        description: 'Não foi possível enviar o documento. Tente novamente.',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const buscarHorariosDisponiveis = async (data, tipo = 'ambos') => {
     if (!data) return;
     
