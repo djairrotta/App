@@ -114,6 +114,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleChamarReuniao = (cliente) => {
+    // Aqui você pode adicionar lógica para:
+    // 1. Abrir link do Google Meet/Zoom
+    // 2. Enviar convite por WhatsApp
+    // 3. Iniciar chamada direta
+    toast({
+      title: 'Chamando para reunião',
+      description: `Iniciando chamada com ${cliente.name} (${cliente.phone})...`,
+    });
+    
+    // Exemplo: abrir WhatsApp (simulação)
+    // const whatsappNumber = cliente.phone.replace(/\D/g, '');
+    // window.open(`https://wa.me/55${whatsappNumber}?text=Olá! Gostaria de agendar uma reunião online.`, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-gradient-to-r from-blue-700 to-blue-800 border-b shadow-lg">
