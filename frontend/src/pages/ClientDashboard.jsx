@@ -361,6 +361,90 @@ const ClientDashboard = () => {
             </div>
           </TabsContent>
 
+          <TabsContent value="documentos" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">Meus Documentos</h2>
+              <p className="text-slate-600">Envie documentos solicitados pelo escritório</p>
+            </div>
+
+            {loadingSolicitacoes ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-slate-500">Carregando solicitações...</p>
+                </CardContent>
+              </Card>
+            ) : solicitacoes.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-12">
+                    <FileText className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-500">Nenhuma solicitação de documento</p>
+                    <p className="text-sm text-slate-400 mt-2">Quando o escritório solicitar documentos, eles aparecerão aqui</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {solicitacoes.map((solicitacao) => (
+                  <Card key={solicitacao.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg text-blue-800">{solicitacao.titulo}</CardTitle>
+                          <CardDescription className="mt-2">{solicitacao.descricao}</CardDescription>
+                        </div>
+                        <Badge className={
+                          solicitacao.status === 'pendente' ? 'bg-orange-100 text-orange-800' :
+                          solicitacao.status === 'enviado' ? 'bg-blue-100 text-blue-800' :
+                          solicitacao.status === 'aprovado' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }>
+                          {solicitacao.status === 'pendente' ? 'Pendente' :
+                           solicitacao.status === 'enviado' ? 'Enviado' :
+                           solicitacao.status === 'aprovado' ? 'Aprovado' : 'Rejeitado'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {solicitacao.prazo && (
+                        <div className="flex items-center space-x-2 text-sm">
+                          <Clock className="h-4 w-4 text-slate-500" />
+                          <span className="text-slate-600">
+                            Prazo: {new Date(solicitacao.prazo).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-xs text-slate-500">
+                          Solicitado em: {new Date(solicitacao.criado_em).toLocaleDateString('pt-BR')}
+                        </span>
+                        {solicitacao.status === 'pendente' && (
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                            onClick={() => {
+                              setSelectedSolicitacao(solicitacao);
+                              setShowUploadDialog(true);
+                            }}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Enviar Documentos
+                          </Button>
+                        )}
+                        {solicitacao.status === 'enviado' && (
+                          <div className="flex items-center space-x-2 text-blue-600">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">Aguardando análise</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
           <TabsContent value="agendamentos" className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-slate-800 mb-2">Meus Agendamentos</h2>
