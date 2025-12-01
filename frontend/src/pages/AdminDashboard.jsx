@@ -308,7 +308,7 @@ const AdminDashboard = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <CardTitle>Gerenciar Horários Disponíveis</CardTitle>
-                    <CardDescription>Configure os horários que os clientes poderão agendar (intervalos de 1 hora)</CardDescription>
+                    <CardDescription>Configure os horários que os clientes poderão agendar (30 minutos ou 1 hora)</CardDescription>
                   </div>
                   <Dialog open={showCreateHorariosDialog} onOpenChange={setShowCreateHorariosDialog}>
                     <DialogTrigger asChild>
