@@ -66,6 +66,245 @@ class AppleLogin(BaseModel):
     token: str
     user_data: Optional[Dict] = None
 
+# ========================================
+# AUTENTICAÇÃO - LOGIN E REGISTRO
+# ========================================
+
+@api_router.post("/auth/register")
+async def register_admin(data: AdminRegister):
+    """
+    Registra novo administrador com email e senha
+    """
+    try:
+        # Verificar se email já existe
+        existing = await db.admins.find_one({"email": data.email})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email já cadastrado")
+        
+        # Hash da senha
+        hashed_password = auth_service.get_password_hash(data.password)
+        
+        # Criar admin
+        admin = {
+            "id": str(uuid.uuid4()),
+            "name": data.name,
+            "email": data.email,
+            "password": hashed_password,
+            "role": "admin",
+            "auth_provider": "email",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.admins.insert_one(admin)
+        
+        # Criar token
+        token = auth_service.create_access_token({
+            "sub": admin["id"],
+            "email": admin["email"],
+            "role": "admin"
+        })
+        
+        return {
+            "success": True,
+            "token": token,
+            "user": {
+                "id": admin["id"],
+                "name": admin["name"],
+                "email": admin["email"],
+                "role": "admin"
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao registrar admin: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/auth/login")
+async def login_admin(data: AdminLogin):
+    """
+    Login de administrador com email e senha
+    """
+    try:
+        # Buscar admin
+        admin = await db.admins.find_one({"email": data.email})
+        if not admin:
+            raise HTTPException(status_code=401, detail="Email ou senha incorretos")
+        
+        # Verificar senha
+        if not auth_service.verify_password(data.password, admin["password"]):
+            raise HTTPException(status_code=401, detail="Email ou senha incorretos")
+        
+        # Criar token
+        token = auth_service.create_access_token({
+            "sub": admin["id"],
+            "email": admin["email"],
+            "role": "admin"
+        })
+        
+        return {
+            "success": True,
+            "token": token,
+            "user": {
+                "id": admin["id"],
+                "name": admin["name"],
+                "email": admin["email"],
+                "role": "admin"
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao fazer login: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/auth/google")
+async def login_google(data: GoogleLogin):
+    """
+    Login com Google OAuth
+    """
+    try:
+        # Verificar token do Google
+        google_data = auth_service.verify_google_token(data.token)
+        if not google_data:
+            raise HTTPException(status_code=401, detail="Token Google inválido")
+        
+        # Buscar ou criar admin
+        admin = await db.admins.find_one({"email": google_data["email"]})
+        
+        if not admin:
+            # Criar novo admin
+            admin = {
+                "id": str(uuid.uuid4()),
+                "name": google_data["name"],
+                "email": google_data["email"],
+                "role": "admin",
+                "auth_provider": "google",
+                "google_id": google_data["google_id"],
+                "picture": google_data.get("picture", ""),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.admins.insert_one(admin)
+        
+        # Criar token
+        token = auth_service.create_access_token({
+            "sub": admin["id"],
+            "email": admin["email"],
+            "role": "admin"
+        })
+        
+        return {
+            "success": True,
+            "token": token,
+            "user": {
+                "id": admin["id"],
+                "name": admin["name"],
+                "email": admin["email"],
+                "role": "admin",
+                "picture": admin.get("picture", "")
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao fazer login com Google: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/auth/apple")
+async def login_apple(data: AppleLogin):
+    """
+    Login com Apple Sign In
+    """
+    try:
+        # Verificar token da Apple
+        apple_data = auth_service.verify_apple_token(data.token)
+        if not apple_data:
+            raise HTTPException(status_code=401, detail="Token Apple inválido")
+        
+        # Buscar ou criar admin
+        admin = await db.admins.find_one({"email": apple_data["email"]})
+        
+        if not admin:
+            # Nome pode vir no user_data na primeira vez
+            name = data.user_data.get("name", "Admin") if data.user_data else "Admin"
+            
+            # Criar novo admin
+            admin = {
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "email": apple_data["email"],
+                "role": "admin",
+                "auth_provider": "apple",
+                "apple_id": apple_data["apple_id"],
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.admins.insert_one(admin)
+        
+        # Criar token
+        token = auth_service.create_access_token({
+            "sub": admin["id"],
+            "email": admin["email"],
+            "role": "admin"
+        })
+        
+        return {
+            "success": True,
+            "token": token,
+            "user": {
+                "id": admin["id"],
+                "name": admin["name"],
+                "email": admin["email"],
+                "role": "admin"
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao fazer login com Apple: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/auth/me")
+async def get_current_user(token: str = Query(...)):
+    """
+    Retorna dados do usuário atual baseado no token
+    """
+    try:
+        payload = auth_service.decode_token(token)
+        if not payload:
+            raise HTTPException(status_code=401, detail="Token inválido")
+        
+        # Buscar usuário
+        user_id = payload.get("sub")
+        role = payload.get("role")
+        
+        if role == "admin":
+            user = await db.admins.find_one({"id": user_id}, {"_id": 0, "password": 0})
+        else:
+            user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        
+        return {
+            "success": True,
+            "user": user
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao buscar usuário: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
