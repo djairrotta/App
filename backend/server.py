@@ -67,6 +67,178 @@ async def get_status_checks():
     
     return status_checks
 
+
+# ========================================
+# ENDPOINTS CNJ DataJud API
+# ========================================
+
+@api_router.get("/cnj/tribunais")
+async def listar_tribunais():
+    """Lista os tribunais disponíveis na API do CNJ"""
+    try:
+        tribunais = cnj_service.listar_tribunais_disponiveis()
+        return {
+            "success": True,
+            "tribunais": tribunais
+        }
+    except Exception as e:
+        logger.error(f"Erro ao listar tribunais: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/cnj/processo")
+async def buscar_processo(
+    numero: str = Query(..., description="Número do processo no formato CNJ"),
+    tribunal: str = Query(..., description="Código do tribunal (ex: TJSP, TRF3)")
+):
+    """
+    Busca um processo específico pelo número na API do CNJ
+    
+    Exemplo: /api/cnj/processo?numero=0000000-00.0000.0.00.0000&tribunal=TJSP
+    """
+    try:
+        logger.info(f"Buscando processo {numero} no tribunal {tribunal}")
+        
+        processo = cnj_service.buscar_processo_por_numero(numero, tribunal)
+        
+        if not processo:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Processo {numero} não encontrado no tribunal {tribunal}"
+            )
+        
+        return {
+            "success": True,
+            "processo": processo
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao buscar processo: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/cnj/processos/parte")
+async def buscar_processos_por_parte(
+    nome: str = Query(..., description="Nome da parte"),
+    tribunal: str = Query(..., description="Código do tribunal"),
+    tipo: str = Query("ambos", description="Tipo de parte: ativo, passivo ou ambos")
+):
+    """
+    Busca processos onde uma pessoa/empresa é parte
+    
+    Exemplo: /api/cnj/processos/parte?nome=João Silva&tribunal=TJSP&tipo=ambos
+    """
+    try:
+        logger.info(f"Buscando processos de {nome} no tribunal {tribunal}")
+        
+        processos = cnj_service.buscar_processos_por_parte(nome, tribunal, tipo)
+        
+        return {
+            "success": True,
+            "total": len(processos),
+            "processos": processos
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao buscar processos por parte: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/cnj/processo/movimentacoes")
+async def buscar_movimentacoes(
+    numero: str = Query(..., description="Número do processo"),
+    tribunal: str = Query(..., description="Código do tribunal")
+):
+    """
+    Busca as movimentações de um processo específico
+    
+    Exemplo: /api/cnj/processo/movimentacoes?numero=0000000-00.0000.0.00.0000&tribunal=TJSP
+    """
+    try:
+        logger.info(f"Buscando movimentações do processo {numero} no tribunal {tribunal}")
+        
+        movimentacoes = cnj_service.buscar_movimentacoes(numero, tribunal)
+        
+        return {
+            "success": True,
+            "total": len(movimentacoes),
+            "movimentacoes": movimentacoes
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao buscar movimentações: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/cnj/processo/monitorar")
+async def adicionar_processo_monitoramento(
+    numero_processo: str,
+    tribunal: str,
+    user_id: str
+):
+    """
+    Adiciona um processo para monitoramento automático
+    """
+    try:
+        # Primeiro, busca o processo na API do CNJ para validar
+        processo = cnj_service.buscar_processo_por_numero(numero_processo, tribunal)
+        
+        if not processo:
+            raise HTTPException(
+                status_code=404,
+                detail="Processo não encontrado na API do CNJ"
+            )
+        
+        # Salva no MongoDB para monitoramento
+        processo_doc = {
+            "user_id": user_id,
+            "numero_processo": numero_processo,
+            "tribunal": tribunal,
+            "dados_processo": processo,
+            "ativo": True,
+            "criado_em": datetime.now(timezone.utc).isoformat(),
+            "ultima_atualizacao": datetime.now(timezone.utc).isoformat()
+        }
+        
+        result = await db.processos_monitorados.insert_one(processo_doc)
+        
+        return {
+            "success": True,
+            "message": "Processo adicionado ao monitoramento com sucesso",
+            "processo_id": str(result.inserted_id)
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao adicionar processo ao monitoramento: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/cnj/processos/monitorados")
+async def listar_processos_monitorados(user_id: str = Query(...)):
+    """
+    Lista todos os processos monitorados de um usuário
+    """
+    try:
+        processos = await db.processos_monitorados.find(
+            {"user_id": user_id, "ativo": True},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        return {
+            "success": True,
+            "total": len(processos),
+            "processos": processos
+        }
+    
+    except Exception as e:
+        logger.error(f"Erro ao listar processos monitorados: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Include the router in the main app
 app.include_router(api_router)
 
