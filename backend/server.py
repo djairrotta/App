@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query, Body
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Body, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -10,6 +11,7 @@ from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
 from services.cnj_service import cnj_service
+import shutil
 
 
 ROOT_DIR = Path(__file__).parent
