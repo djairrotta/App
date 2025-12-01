@@ -178,6 +178,7 @@ const ClientDashboard = () => {
         body: JSON.stringify({
           user_id: '1',
           user_name: userName,
+          user_phone: '(11) 98765-4321',
           processo_numero: selectedProcess?.processNumber,
           data: appointmentData.date,
           hora_inicio: appointmentData.time,
