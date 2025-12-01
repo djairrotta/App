@@ -17,7 +17,12 @@ const ClientDashboard = () => {
   const navigate = useNavigate();
   const [selectedProcess, setSelectedProcess] = useState(null);
   const [showAppointmentDialog, setShowAppointmentDialog] = useState(false);
-  const [appointmentData, setAppointmentData] = useState({ date: '', time: '', notes: '' });
+  const [appointmentData, setAppointmentData] = useState({ 
+    date: '', 
+    time: '', 
+    type: 'online', 
+    notes: '' 
+  });
   const userName = localStorage.getItem('userName') || 'Cliente';
 
   const handleLogout = () => {
@@ -27,9 +32,22 @@ const ClientDashboard = () => {
   };
 
   const handleScheduleAppointment = () => {
-    toast({ title: 'Agendamento solicitado!', description: 'Você receberá uma confirmação por WhatsApp em breve.' });
+    if (!appointmentData.date || !appointmentData.time || !appointmentData.type) {
+      toast({ 
+        title: 'Campos obrigatórios', 
+        description: 'Por favor, preencha data, horário e tipo de consulta.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const typeLabel = appointmentData.type === 'online' ? 'Online' : 'Presencial';
+    toast({ 
+      title: 'Agendamento solicitado!', 
+      description: `Consulta ${typeLabel} agendada para ${appointmentData.date} às ${appointmentData.time}. Você receberá uma confirmação por WhatsApp.` 
+    });
     setShowAppointmentDialog(false);
-    setAppointmentData({ date: '', time: '', notes: '' });
+    setAppointmentData({ date: '', time: '', type: 'online', notes: '' });
   };
 
   return (
