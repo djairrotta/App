@@ -12,7 +12,10 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from services.cnj_service import cnj_service
 from services.whatsapp_service import whatsapp_service
+from services.storage_service import storage_service
+from services.transcription_service import transcription_service
 import shutil
+import requests as http_requests
 
 
 ROOT_DIR = Path(__file__).parent
