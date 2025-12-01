@@ -423,7 +423,7 @@ const AdminDashboard = () => {
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                           <p className="text-sm text-blue-800">
                             <Clock className="h-4 w-4 inline mr-1" />
-                            <strong>Intervalo fixo:</strong> 1 hora por agendamento
+                            <strong>Duração:</strong> {formData.duracao_minutos === 30 ? '30 minutos' : '1 hora'} por agendamento
                           </p>
                         </div>
                         <Button onClick={handleCreateHorarios} className="w-full bg-cyan-500 hover:bg-cyan-600">
