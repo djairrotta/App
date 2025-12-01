@@ -32,6 +32,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/pagamento" element={<Pagamento />} />
           <Route 
