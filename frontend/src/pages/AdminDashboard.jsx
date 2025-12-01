@@ -251,26 +251,97 @@ const AdminDashboard = () => {
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="sm:max-w-[500px]">
                               <DialogHeader>
-                                <DialogTitle>Detalhes do Cliente</DialogTitle>
-                                <DialogDescription>{selectedClient?.name}</DialogDescription>
+                                <DialogTitle className="text-xl font-bold text-blue-900">Detalhes do Cliente</DialogTitle>
+                                <DialogDescription className="text-slate-600">{selectedClient?.name}</DialogDescription>
                               </DialogHeader>
-                              <div className="space-y-4 mt-4">
+                              <div className="space-y-5 mt-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                  <div><p className="text-sm font-semibold text-slate-700">CPF</p><p className="text-slate-600">{selectedClient?.cpf}</p></div>
-                                  <div><p className="text-sm font-semibold text-slate-700">E-mail</p><p className="text-slate-600">{selectedClient?.email}</p></div>
-                                  <div><p className="text-sm font-semibold text-slate-700">Telefone</p><p className="text-slate-600">{selectedClient?.phone}</p></div>
-                                  <div><p className="text-sm font-semibold text-slate-700">Plano</p><Badge>{selectedClient?.plan}</Badge></div>
-                                  <div><p className="text-sm font-semibold text-slate-700">Data de Cadastro</p><p className="text-slate-600">{selectedClient?.registrationDate}</p></div>
-                                  <div><p className="text-sm font-semibold text-slate-700">Próximo Pagamento</p><p className="text-slate-600">{selectedClient?.nextPayment}</p></div>
-                                </div>
-                                <div className="pt-4 border-t">
-                                  <p className="text-sm font-semibold text-slate-700 mb-2">Ações</p>
-                                  <div className="flex space-x-2">
-                                    <Button variant="outline" size="sm">Enviar Mensagem</Button>
-                                    <Button variant="outline" size="sm">Bloquear Acesso</Button>
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-700 mb-1">CPF</p>
+                                    <p className="text-slate-600 font-mono">{selectedClient?.cpf}</p>
                                   </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-700 mb-1">E-mail</p>
+                                    <p className="text-slate-600 text-sm">{selectedClient?.email}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-700 mb-1">Telefone</p>
+                                    <p className="text-slate-600 font-medium">{selectedClient?.phone}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-700 mb-1">Plano</p>
+                                    <Badge className="mt-1">{selectedClient?.plan}</Badge>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-700 mb-1">Data de Cadastro</p>
+                                    <p className="text-slate-600">{selectedClient?.registrationDate}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-700 mb-1">Próximo Pagamento</p>
+                                    <p className="text-slate-600">{selectedClient?.nextPayment}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-sm font-semibold text-blue-900 mb-1">Status da Conta</p>
+                                      <Badge className={selectedClient?.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}>
+                                        {selectedClient?.paymentStatus === 'paid' ? 'Pagamento em Dia' : 'Pagamento Pendente'}
+                                      </Badge>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm text-blue-700">Processos Ativos</p>
+                                      <p className="text-2xl font-bold text-blue-900">{selectedClient?.processCount}</p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="pt-4 border-t">
+                                  <p className="text-sm font-semibold text-slate-700 mb-3">Ações Rápidas</p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="w-full"
+                                      onClick={() => {
+                                        toast({
+                                          title: 'Mensagem enviada',
+                                          description: `Mensagem enviada para ${selectedClient?.name}`
+                                        });
+                                      }}
+                                    >
+                                      <Phone className="h-4 w-4 mr-2" />
+                                      Enviar Mensagem
+                                    </Button>
+                                    <Button 
+                                      size="sm"
+                                      className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white"
+                                      onClick={() => handleChamarReuniao(selectedClient)}
+                                    >
+                                      <Video className="h-4 w-4 mr-2" />
+                                      Chamar para Reunião
+                                    </Button>
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => {
+                                      if (confirm('Deseja realmente bloquear o acesso deste cliente?')) {
+                                        toast({
+                                          title: 'Cliente bloqueado',
+                                          description: `Acesso de ${selectedClient?.name} foi bloqueado.`,
+                                          variant: 'destructive'
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <AlertCircle className="h-4 w-4 mr-2" />
+                                    Bloquear Acesso
+                                  </Button>
                                 </div>
                               </div>
                             </DialogContent>
