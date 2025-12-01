@@ -129,6 +129,22 @@ const AdminDashboard = () => {
     // window.open(`https://wa.me/55${whatsappNumber}?text=Olá! Gostaria de agendar uma reunião online.`, '_blank');
   };
 
+  const isBirthdayThisMonth = (birthDate) => {
+    if (!birthDate) return false;
+    const [day, month] = birthDate.split('/');
+    const currentMonth = new Date().getMonth() + 1;
+    return parseInt(month) === currentMonth;
+  };
+
+  const isBirthdayToday = (birthDate) => {
+    if (!birthDate) return false;
+    const [day, month] = birthDate.split('/');
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.getMonth() + 1;
+    return parseInt(day) === currentDay && parseInt(month) === currentMonth;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-gradient-to-r from-blue-700 to-blue-800 border-b shadow-lg">
