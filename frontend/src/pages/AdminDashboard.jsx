@@ -168,6 +168,7 @@ const AdminDashboard = () => {
         body: JSON.stringify({
           user_id: selectedClient?.id,
           user_name: selectedClient?.name,
+          user_phone: selectedClient?.phone,
           ...solicitacaoDoc
         })
       });
@@ -177,7 +178,7 @@ const AdminDashboard = () => {
       if (result.success) {
         toast({
           title: 'Solicitação enviada!',
-          description: `${selectedClient?.name} receberá uma notificação para enviar os documentos.`
+          description: `${selectedClient?.name} receberá uma notificação por WhatsApp (${selectedClient?.phone}) para enviar os documentos.`
         });
         setShowSolicitarDocDialog(false);
         setSolicitacaoDoc({ titulo: '', descricao: '', prazo: '' });
