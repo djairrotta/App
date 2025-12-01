@@ -187,11 +187,12 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="clientes" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
             <TabsTrigger value="clientes">Clientes</TabsTrigger>
             <TabsTrigger value="processos">Processos</TabsTrigger>
+            <TabsTrigger value="horarios">Horários</TabsTrigger>
             <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
-            <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
+            <TabsTrigger value="configuracoes">Config</TabsTrigger>
           </TabsList>
 
           <TabsContent value="clientes" className="space-y-6">
